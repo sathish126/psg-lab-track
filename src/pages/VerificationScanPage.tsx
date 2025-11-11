@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Html5Qrcode } from 'html5-qrcode';
 import { equipmentApi, verificationApi } from '@/lib/api';
 import { useAuthStore } from '@/stores/authStore';
+import { useNotificationStore } from '@/stores/notificationStore';
 import { Equipment, EquipmentStatus, VerificationStatus } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -24,6 +25,7 @@ import { Breadcrumb } from '@/components/Breadcrumb';
 export default function VerificationScanPage() {
   const navigate = useNavigate();
   const { user } = useAuthStore();
+  const { addNotification } = useNotificationStore();
   const [scanning, setScanning] = useState(false);
   const [scannedEquipment, setScannedEquipment] = useState<Equipment | null>(null);
   const [html5QrCode, setHtml5QrCode] = useState<Html5Qrcode | null>(null);
@@ -107,6 +109,14 @@ export default function VerificationScanPage() {
       });
 
       toast.success('Verification submitted successfully');
+      
+      addNotification({
+        type: 'success',
+        title: 'Equipment Verified',
+        message: `${scannedEquipment.name} has been verified successfully`,
+        link: `/equipment/${scannedEquipment.id}`,
+      });
+      
       setScannedEquipment(null);
       setFormData({
         physicalPresence: 'true',

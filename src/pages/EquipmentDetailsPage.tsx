@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useEquipmentStore } from '@/stores/equipmentStore';
+import { useNotificationStore } from '@/stores/notificationStore';
 import { useAuthStore } from '@/stores/authStore';
 import { Equipment, UserRole } from '@/types';
 import { Button } from '@/components/ui/button';
@@ -30,6 +31,7 @@ export default function EquipmentDetailsPage() {
   const navigate = useNavigate();
   const { user } = useAuthStore();
   const { selectedEquipment, fetchEquipmentById, deleteEquipment, loading } = useEquipmentStore();
+  const { addNotification } = useNotificationStore();
   const [qrCodeUrl, setQrCodeUrl] = useState<string>('');
 
   useEffect(() => {
@@ -48,9 +50,17 @@ export default function EquipmentDetailsPage() {
   const canDelete = user?.role === UserRole.PRINCIPAL;
 
   const handleDelete = async () => {
-    if (id) {
+    if (id && selectedEquipment) {
       try {
         await deleteEquipment(id);
+        toast.success('Equipment deleted successfully');
+        
+        addNotification({
+          type: 'info',
+          title: 'Equipment Deleted',
+          message: `${selectedEquipment.name} has been removed from the inventory`,
+        });
+        
         navigate(ROUTES.EQUIPMENT);
       } catch (error) {
         // Error handled in store

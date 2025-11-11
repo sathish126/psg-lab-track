@@ -13,14 +13,22 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Search } from 'lucide-react';
+import { Plus, Search, Trash2, Edit } from 'lucide-react';
 import { ROLE_LABELS } from '@/lib/utils/constants';
 import { Breadcrumb } from '@/components/Breadcrumb';
+import { UserCreateModal } from '@/components/UserCreateModal';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
+import { toast } from 'sonner';
+import { useNotificationStore } from '@/stores/notificationStore';
 
 export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const { addNotification } = useNotificationStore();
 
   useEffect(() => {
     loadUsers();
@@ -34,6 +42,28 @@ export default function UsersPage() {
       console.error('Failed to load users:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDeleteUser = async () => {
+    if (!selectedUser) return;
+    
+    try {
+      await userApi.delete(selectedUser.id);
+      toast.success('User deleted successfully');
+      
+      addNotification({
+        type: 'info',
+        title: 'User Removed',
+        message: `${selectedUser.name} has been removed from the system`,
+      });
+      
+      loadUsers();
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to delete user');
+    } finally {
+      setDeleteDialogOpen(false);
+      setSelectedUser(null);
     }
   };
 
@@ -65,7 +95,7 @@ export default function UsersPage() {
             Manage system users and their roles
           </p>
         </div>
-        <Button>
+        <Button onClick={() => setCreateModalOpen(true)}>
           <Plus className="mr-2 h-4 w-4" />
           Add User
         </Button>
@@ -92,12 +122,13 @@ export default function UsersPage() {
               <TableHead>Role</TableHead>
               <TableHead>Department</TableHead>
               <TableHead>Phone</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filteredUsers.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                   No users found
                 </TableCell>
               </TableRow>
@@ -111,12 +142,49 @@ export default function UsersPage() {
                   </TableCell>
                   <TableCell>{user.department?.name || 'N/A'}</TableCell>
                   <TableCell>{user.phone || 'N/A'}</TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex items-center justify-end gap-2">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => toast.info('Edit functionality coming soon')}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => {
+                          setSelectedUser(user);
+                          setDeleteDialogOpen(true);
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </div>
+                  </TableCell>
                 </TableRow>
               ))
             )}
           </TableBody>
         </Table>
       </Card>
+
+      <UserCreateModal
+        open={createModalOpen}
+        onOpenChange={setCreateModalOpen}
+        onSuccess={loadUsers}
+      />
+
+      <ConfirmDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        title="Delete User"
+        description={`Are you sure you want to delete ${selectedUser?.name}? This action cannot be undone.`}
+        confirmText="Delete"
+        variant="destructive"
+        onConfirm={handleDeleteUser}
+      />
     </div>
   );
 }

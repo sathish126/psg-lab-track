@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useEquipmentStore } from '@/stores/equipmentStore';
+import { useNotificationStore } from '@/stores/notificationStore';
 import { useAuthStore } from '@/stores/authStore';
 import { labApi, userApi } from '@/lib/api';
 import { Lab, User, EquipmentStatus } from '@/types';
@@ -26,6 +27,7 @@ export default function EquipmentCreatePage() {
   const navigate = useNavigate();
   const { user } = useAuthStore();
   const { createEquipment, updateEquipment, fetchEquipmentById, selectedEquipment, loading } = useEquipmentStore();
+  const { addNotification } = useNotificationStore();
 
   const [labs, setLabs] = useState<Lab[]>([]);
   const [faculties, setFaculties] = useState<User[]>([]);
@@ -108,9 +110,21 @@ export default function EquipmentCreatePage() {
 
       if (isEdit && id) {
         await updateEquipment(id, data);
+        addNotification({
+          type: 'success',
+          title: 'Equipment Updated',
+          message: `${formData.name} has been updated successfully`,
+          link: ROUTES.EQUIPMENT_DETAILS(id),
+        });
         navigate(ROUTES.EQUIPMENT_DETAILS(id));
       } else {
         const newEq = await createEquipment(data);
+        addNotification({
+          type: 'success',
+          title: 'Equipment Added',
+          message: `${formData.name} has been added to the inventory`,
+          link: ROUTES.EQUIPMENT_DETAILS(newEq.id),
+        });
         navigate(ROUTES.EQUIPMENT_DETAILS(newEq.id));
       }
     } catch (error) {
