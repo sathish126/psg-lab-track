@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Breadcrumb } from '@/components/Breadcrumb';
 
 export default function CalendarPage() {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -81,6 +82,8 @@ export default function CalendarPage() {
 
   return (
     <div className="space-y-6">
+      <Breadcrumb items={[{ label: 'Calendar' }]} />
+      
       <div>
         <h1 className="text-3xl font-bold">Verification Calendar</h1>
         <p className="text-muted-foreground mt-1">

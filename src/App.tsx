@@ -11,6 +11,7 @@ import EquipmentListPage from "./pages/EquipmentListPage";
 import EquipmentDetailsPage from "./pages/EquipmentDetailsPage";
 import EquipmentCreatePage from "./pages/EquipmentCreatePage";
 import LabsPage from "./pages/LabsPage";
+import LabDetailsPage from "./pages/LabDetailsPage";
 import VerificationListPage from "./pages/VerificationListPage";
 import VerificationScanPage from "./pages/VerificationScanPage";
 import CalendarPage from "./pages/CalendarPage";
@@ -41,6 +42,7 @@ const App = () => (
               <Route path="/equipment/:id/edit" element={<EquipmentCreatePage />} />
               
               <Route path="/labs" element={<LabsPage />} />
+              <Route path="/labs/:id" element={<LabDetailsPage />} />
               
               <Route path="/verification" element={<VerificationListPage />} />
               <Route path="/verification/scan" element={<VerificationScanPage />} />

@@ -9,6 +9,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { ROLE_LABELS } from '@/lib/utils/constants';
 import { toast } from 'sonner';
+import { Breadcrumb } from '@/components/Breadcrumb';
 
 export default function SettingsPage() {
   const { user } = useAuthStore();
@@ -32,6 +33,8 @@ export default function SettingsPage() {
 
   return (
     <div className="space-y-6">
+      <Breadcrumb items={[{ label: 'Settings' }]} />
+      
       <div>
         <h1 className="text-3xl font-bold">Settings</h1>
         <p className="text-muted-foreground mt-1">

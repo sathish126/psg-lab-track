@@ -19,6 +19,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowLeft } from 'lucide-react';
 import { ROUTES } from '@/lib/utils/constants';
 import { toast } from 'sonner';
+import { Breadcrumb } from '@/components/Breadcrumb';
 
 export default function EquipmentCreatePage() {
   const { id } = useParams();
@@ -119,6 +120,11 @@ export default function EquipmentCreatePage() {
 
   return (
     <div className="space-y-6">
+      <Breadcrumb items={[
+        { label: 'Equipment', href: ROUTES.EQUIPMENT },
+        { label: isEdit ? 'Edit Equipment' : 'Create Equipment' }
+      ]} />
+      
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon" onClick={() => navigate(ROUTES.EQUIPMENT)}>
           <ArrowLeft className="h-4 w-4" />

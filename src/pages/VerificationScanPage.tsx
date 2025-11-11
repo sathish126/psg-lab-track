@@ -19,6 +19,7 @@ import { QrCode, Camera, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { ROUTES } from '@/lib/utils/constants';
+import { Breadcrumb } from '@/components/Breadcrumb';
 
 export default function VerificationScanPage() {
   const navigate = useNavigate();
@@ -131,6 +132,11 @@ export default function VerificationScanPage() {
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
+      <Breadcrumb items={[
+        { label: 'Verification', href: ROUTES.VERIFICATION },
+        { label: 'Scan QR Code' }
+      ]} />
+      
       <div>
         <h1 className="text-3xl font-bold">QR Code Scanner</h1>
         <p className="text-muted-foreground mt-1">

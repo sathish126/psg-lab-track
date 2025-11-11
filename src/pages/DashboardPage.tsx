@@ -6,8 +6,12 @@ import { Package, CheckCircle2, Clock, AlertCircle } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, Legend } from 'recharts';
 import { StatusBadge } from '@/components/StatusBadge';
 import { formatDate, formatRelativeTime } from '@/lib/utils/formatters';
+import { Breadcrumb } from '@/components/Breadcrumb';
+import { useNavigate } from 'react-router-dom';
+import { ROUTES } from '@/lib/utils/constants';
 
 export default function DashboardPage() {
+  const navigate = useNavigate();
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [recentVerifications, setRecentVerifications] = useState<Verification[]>([]);
   const [needsAttention, setNeedsAttention] = useState<Equipment[]>([]);
@@ -65,6 +69,8 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
+      <Breadcrumb items={[{ label: 'Dashboard' }]} />
+      
       <div>
         <h1 className="text-3xl font-bold">Dashboard</h1>
         <p className="text-muted-foreground mt-1">
@@ -179,8 +185,12 @@ export default function DashboardPage() {
           <CardContent>
             <div className="space-y-4">
               {recentVerifications.slice(0, 5).map((verification) => (
-                <div key={verification.id} className="flex items-center justify-between">
-                  <div className="space-y-1">
+                <div 
+                  key={verification.id} 
+                  className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/50 transition-colors cursor-pointer"
+                  onClick={() => navigate(ROUTES.EQUIPMENT_DETAILS(verification.equipmentId))}
+                >
+                  <div className="space-y-1 flex-1">
                     <p className="text-sm font-medium">{verification.equipment?.name}</p>
                     <p className="text-xs text-muted-foreground">
                       by {verification.verifiedBy?.name} • {formatRelativeTime(verification.verifiedAt)}
@@ -201,8 +211,12 @@ export default function DashboardPage() {
           <CardContent>
             <div className="space-y-4">
               {needsAttention.slice(0, 5).map((equipment) => (
-                <div key={equipment.id} className="flex items-center justify-between">
-                  <div className="space-y-1">
+                <div 
+                  key={equipment.id} 
+                  className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/50 transition-colors cursor-pointer"
+                  onClick={() => navigate(ROUTES.EQUIPMENT_DETAILS(equipment.id))}
+                >
+                  <div className="space-y-1 flex-1">
                     <p className="text-sm font-medium">{equipment.name}</p>
                     <p className="text-xs text-muted-foreground">
                       Serial: {equipment.serialNo} • {equipment.lab?.name}

@@ -21,12 +21,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Plus, Search, Download, Eye } from 'lucide-react';
+import { Plus, Search, Download, Eye, FileDown, Filter } from 'lucide-react';
 import { StatusBadge } from '@/components/StatusBadge';
 import { formatDate, formatCurrency } from '@/lib/utils/formatters';
 import { ROUTES } from '@/lib/utils/constants';
 import { generateQRCode, downloadQRCode } from '@/lib/qrcode';
 import { toast } from 'sonner';
+import { Breadcrumb } from '@/components/Breadcrumb';
 
 export default function EquipmentListPage() {
   const navigate = useNavigate();
@@ -82,6 +83,8 @@ export default function EquipmentListPage() {
 
   return (
     <div className="space-y-6">
+      <Breadcrumb items={[{ label: 'Equipment' }]} />
+      
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">Equipment</h1>
@@ -111,18 +114,23 @@ export default function EquipmentListPage() {
               />
             </div>
           </div>
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-full md:w-48">
-              <SelectValue placeholder="Filter by status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Status</SelectItem>
-              <SelectItem value="WORKING">Working</SelectItem>
-              <SelectItem value="NOT_WORKING">Not Working</SelectItem>
-              <SelectItem value="REPAIRABLE">Repairable</SelectItem>
-              <SelectItem value="TO_BE_SCRAPPED">To Be Scrapped</SelectItem>
-            </SelectContent>
-          </Select>
+          <div className="flex gap-2">
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-full md:w-48">
+                <SelectValue placeholder="Filter by status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Status</SelectItem>
+                <SelectItem value="WORKING">Working</SelectItem>
+                <SelectItem value="NOT_WORKING">Not Working</SelectItem>
+                <SelectItem value="REPAIRABLE">Repairable</SelectItem>
+                <SelectItem value="TO_BE_SCRAPPED">To Be Scrapped</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button variant="outline" size="icon">
+              <FileDown className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       </Card>
 

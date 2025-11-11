@@ -4,6 +4,7 @@ import { Department, Equipment } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { FileDown, TrendingUp, Package, CheckCircle2 } from 'lucide-react';
+import { Breadcrumb } from '@/components/Breadcrumb';
 
 export default function ReportsPage() {
   const [departments, setDepartments] = useState<Department[]>([]);
@@ -50,6 +51,8 @@ export default function ReportsPage() {
 
   return (
     <div className="space-y-6">
+      <Breadcrumb items={[{ label: 'Reports' }]} />
+      
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">Reports</h1>

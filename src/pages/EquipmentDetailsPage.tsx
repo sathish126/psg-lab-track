@@ -12,6 +12,7 @@ import { formatDate, formatCurrency } from '@/lib/utils/formatters';
 import { ROUTES } from '@/lib/utils/constants';
 import { generateQRCode, downloadQRCode } from '@/lib/qrcode';
 import { toast } from 'sonner';
+import { Breadcrumb } from '@/components/Breadcrumb';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -87,6 +88,11 @@ export default function EquipmentDetailsPage() {
 
   return (
     <div className="space-y-6">
+      <Breadcrumb items={[
+        { label: 'Equipment', href: ROUTES.EQUIPMENT },
+        { label: eq.name }
+      ]} />
+      
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={() => navigate(ROUTES.EQUIPMENT)}>

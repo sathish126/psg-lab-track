@@ -17,6 +17,7 @@ import { QrCode, Search } from 'lucide-react';
 import { StatusBadge } from '@/components/StatusBadge';
 import { formatDateTime } from '@/lib/utils/formatters';
 import { ROUTES } from '@/lib/utils/constants';
+import { Breadcrumb } from '@/components/Breadcrumb';
 
 export default function VerificationListPage() {
   const navigate = useNavigate();
@@ -59,6 +60,8 @@ export default function VerificationListPage() {
 
   return (
     <div className="space-y-6">
+      <Breadcrumb items={[{ label: 'Verification' }]} />
+      
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">Verification History</h1>
