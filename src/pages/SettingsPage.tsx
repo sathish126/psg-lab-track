@@ -12,7 +12,7 @@ import { Separator } from '@/components/ui/separator';
 import { ROLE_LABELS } from '@/lib/utils/constants';
 import { toast } from 'sonner';
 import { Breadcrumb } from '@/components/Breadcrumb';
-import { useTheme } from 'next-themes';
+import { useTheme } from '@/components/ThemeProvider';
 import { Moon, Sun, Monitor, Upload } from 'lucide-react';
 
 export default function SettingsPage() {
