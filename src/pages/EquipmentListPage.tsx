@@ -2,10 +2,11 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useEquipmentStore } from '@/stores/equipmentStore';
 import { useAuthStore } from '@/stores/authStore';
-import { Equipment, UserRole } from '@/types';
+import { Equipment, UserRole, EquipmentStatus } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Table,
   TableBody,
@@ -21,21 +22,26 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Plus, Search, Download, Eye, FileDown, Filter } from 'lucide-react';
+import { Plus, Search, Download, Eye, FileDown } from 'lucide-react';
 import { StatusBadge } from '@/components/StatusBadge';
 import { formatDate, formatCurrency } from '@/lib/utils/formatters';
 import { ROUTES } from '@/lib/utils/constants';
 import { generateQRCode, downloadQRCode } from '@/lib/qrcode';
+import { exportEquipmentToCSV } from '@/lib/utils/export';
 import { toast } from 'sonner';
 import { Breadcrumb } from '@/components/Breadcrumb';
+import { BulkActionsBar } from '@/components/BulkActionsBar';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
 
 export default function EquipmentListPage() {
   const navigate = useNavigate();
   const { user } = useAuthStore();
-  const { equipment, loading, fetchEquipment } = useEquipmentStore();
+  const { equipment, loading, fetchEquipment, bulkUpdateEquipment, bulkDeleteEquipment } = useEquipmentStore();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [filteredEquipment, setFilteredEquipment] = useState<Equipment[]>([]);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   useEffect(() => {
     fetchEquipment();
@@ -70,6 +76,49 @@ export default function EquipmentListPage() {
       toast.success('QR code downloaded');
     } catch (error) {
       toast.error('Failed to download QR code');
+    }
+  };
+
+  const handleExportCSV = () => {
+    const dataToExport = selectedIds.length > 0 
+      ? filteredEquipment.filter(eq => selectedIds.includes(eq.id))
+      : filteredEquipment;
+    exportEquipmentToCSV(dataToExport);
+    toast.success('Equipment data exported');
+  };
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedIds(filteredEquipment.map(eq => eq.id));
+    } else {
+      setSelectedIds([]);
+    }
+  };
+
+  const handleSelectOne = (id: string, checked: boolean) => {
+    if (checked) {
+      setSelectedIds([...selectedIds, id]);
+    } else {
+      setSelectedIds(selectedIds.filter(selectedId => selectedId !== id));
+    }
+  };
+
+  const handleBulkStatusChange = async (status: EquipmentStatus) => {
+    try {
+      await bulkUpdateEquipment(selectedIds, { workingStatus: status });
+      setSelectedIds([]);
+    } catch (error) {
+      // Error handled in store
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    try {
+      await bulkDeleteEquipment(selectedIds);
+      setSelectedIds([]);
+      setShowDeleteConfirm(false);
+    } catch (error) {
+      // Error handled in store
     }
   };
 
@@ -127,18 +176,34 @@ export default function EquipmentListPage() {
                 <SelectItem value="TO_BE_SCRAPPED">To Be Scrapped</SelectItem>
               </SelectContent>
             </Select>
-            <Button variant="outline" size="icon">
+            <Button variant="outline" size="icon" onClick={handleExportCSV}>
               <FileDown className="h-4 w-4" />
             </Button>
           </div>
         </div>
       </Card>
 
+      {/* Bulk Actions Bar */}
+      {selectedIds.length > 0 && (
+        <BulkActionsBar
+          selectedCount={selectedIds.length}
+          onClearSelection={() => setSelectedIds([])}
+          onBulkStatusChange={handleBulkStatusChange}
+          onBulkDelete={() => setShowDeleteConfirm(true)}
+        />
+      )}
+
       {/* Equipment Table */}
       <Card>
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-12">
+                <Checkbox
+                  checked={selectedIds.length === filteredEquipment.length && filteredEquipment.length > 0}
+                  onCheckedChange={handleSelectAll}
+                />
+              </TableHead>
               <TableHead>Name</TableHead>
               <TableHead>Serial No.</TableHead>
               <TableHead>Lab</TableHead>
@@ -152,13 +217,19 @@ export default function EquipmentListPage() {
           <TableBody>
             {filteredEquipment.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
                   No equipment found
                 </TableCell>
               </TableRow>
             ) : (
               filteredEquipment.map(eq => (
-                <TableRow key={eq.id} className="cursor-pointer hover:bg-muted/50">
+                <TableRow key={eq.id} className="hover:bg-muted/50">
+                  <TableCell>
+                    <Checkbox
+                      checked={selectedIds.includes(eq.id)}
+                      onCheckedChange={(checked) => handleSelectOne(eq.id, checked as boolean)}
+                    />
+                  </TableCell>
                   <TableCell>
                     <div>
                       <div className="font-medium">{eq.name}</div>
@@ -207,6 +278,15 @@ export default function EquipmentListPage() {
       <div className="text-sm text-muted-foreground text-center">
         Showing {filteredEquipment.length} of {equipment.length} equipment
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDialog
+        open={showDeleteConfirm}
+        onOpenChange={setShowDeleteConfirm}
+        onConfirm={handleBulkDelete}
+        title="Delete Equipment"
+        description={`Are you sure you want to delete ${selectedIds.length} equipment item(s)? This action cannot be undone.`}
+      />
     </div>
   );
 }

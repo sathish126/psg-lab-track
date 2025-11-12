@@ -13,6 +13,8 @@ interface EquipmentState {
   createEquipment: (data: Partial<Equipment>) => Promise<Equipment>;
   updateEquipment: (id: string, data: Partial<Equipment>) => Promise<void>;
   deleteEquipment: (id: string) => Promise<void>;
+  bulkUpdateEquipment: (ids: string[], data: Partial<Equipment>) => Promise<void>;
+  bulkDeleteEquipment: (ids: string[]) => Promise<void>;
   setSelectedEquipment: (equipment: Equipment | null) => void;
 }
 
@@ -88,6 +90,42 @@ export const useEquipmentStore = create<EquipmentState>((set, get) => ({
         loading: false,
       }));
       toast.success('Equipment deleted successfully');
+    } catch (error: any) {
+      set({ error: error.message, loading: false });
+      toast.error('Failed to delete equipment');
+      throw error;
+    }
+  },
+
+  bulkUpdateEquipment: async (ids: string[], data: Partial<Equipment>) => {
+    set({ loading: true, error: null });
+    try {
+      // Update each equipment item
+      const updatePromises = ids.map(id => equipmentApi.update(id, data));
+      await Promise.all(updatePromises);
+      
+      // Refresh equipment list
+      await get().fetchEquipment();
+      toast.success(`${ids.length} equipment items updated successfully`);
+    } catch (error: any) {
+      set({ error: error.message, loading: false });
+      toast.error('Failed to update equipment');
+      throw error;
+    }
+  },
+
+  bulkDeleteEquipment: async (ids: string[]) => {
+    set({ loading: true, error: null });
+    try {
+      // Delete each equipment item
+      const deletePromises = ids.map(id => equipmentApi.delete(id));
+      await Promise.all(deletePromises);
+      
+      set(state => ({
+        equipment: state.equipment.filter(eq => !ids.includes(eq.id)),
+        loading: false,
+      }));
+      toast.success(`${ids.length} equipment items deleted successfully`);
     } catch (error: any) {
       set({ error: error.message, loading: false });
       toast.error('Failed to delete equipment');

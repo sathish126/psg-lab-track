@@ -13,11 +13,13 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { useNavigate } from 'react-router-dom';
-import { QrCode, Search } from 'lucide-react';
+import { QrCode, Search, FileDown } from 'lucide-react';
 import { StatusBadge } from '@/components/StatusBadge';
 import { formatDateTime } from '@/lib/utils/formatters';
 import { ROUTES } from '@/lib/utils/constants';
 import { Breadcrumb } from '@/components/Breadcrumb';
+import { exportVerificationsToCSV } from '@/lib/utils/export';
+import { toast } from 'sonner';
 
 export default function VerificationListPage() {
   const navigate = useNavigate();
@@ -38,6 +40,11 @@ export default function VerificationListPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleExportCSV = () => {
+    exportVerificationsToCSV(filteredVerifications);
+    toast.success('Verification data exported');
   };
 
   const filteredVerifications = verifications.filter(v => {
@@ -76,14 +83,19 @@ export default function VerificationListPage() {
       </div>
 
       <Card className="p-4">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search by equipment name, serial number, or verifier..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            className="pl-9"
-          />
+        <div className="flex gap-2">
+          <div className="flex-1 relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search by equipment name, serial number, or verifier..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+          <Button variant="outline" size="icon" onClick={handleExportCSV}>
+            <FileDown className="h-4 w-4" />
+          </Button>
         </div>
       </Card>
 
