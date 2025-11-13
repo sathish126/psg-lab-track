@@ -1,28 +1,25 @@
-import { Navigate, Outlet } from 'react-router-dom';
-import { useAuthStore } from '@/stores/authStore';
-import { useEffect } from 'react';
+import { Navigate } from 'react-router-dom';
+import { useAuth } from '@/hooks/useAuth';
+import { LoadingSpinner } from './LoadingSpinner';
 
-export const ProtectedRoute = () => {
-  const { isAuthenticated, isLoading, checkAuth } = useAuthStore();
+interface ProtectedRouteProps {
+  children: React.ReactNode;
+}
 
-  useEffect(() => {
-    checkAuth();
-  }, [checkAuth]);
+export default function ProtectedRoute({ children }: ProtectedRouteProps) {
+  const { isAuthenticated, loading } = useAuth();
 
-  if (isLoading) {
+  if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="text-center">
-          <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent mx-auto mb-4" />
-          <p className="text-muted-foreground">Loading...</p>
-        </div>
+      <div className="flex items-center justify-center min-h-screen">
+        <LoadingSpinner />
       </div>
     );
   }
 
   if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/auth" replace />;
   }
 
-  return <Outlet />;
-};
+  return <>{children}</>;
+}

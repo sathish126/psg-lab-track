@@ -15,7 +15,7 @@ export const AppLayout = () => {
         'flex-1 flex flex-col transition-all duration-300',
         sidebarCollapsed ? 'ml-16' : 'ml-64'
       )}>
-        <Header sidebarCollapsed={sidebarCollapsed} />
+        <Header />
         
         <main className="flex-1 p-6 bg-muted/20">
           <Outlet />

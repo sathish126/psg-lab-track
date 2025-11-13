@@ -1,14 +1,25 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/hooks/useAuth';
+import { LoadingSpinner } from '@/components/LoadingSpinner';
 
-const Index = () => {
+export default function Index() {
+  const navigate = useNavigate();
+  const { isAuthenticated, loading } = useAuth();
+
+  useEffect(() => {
+    if (!loading) {
+      if (isAuthenticated) {
+        navigate('/dashboard');
+      } else {
+        navigate('/auth');
+      }
+    }
+  }, [isAuthenticated, loading, navigate]);
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
-      <div className="text-center">
-        <h1 className="mb-4 text-4xl font-bold">Welcome to Your Blank App</h1>
-        <p className="text-xl text-muted-foreground">Start building your amazing project here!</p>
-      </div>
+    <div className="flex items-center justify-center min-h-screen">
+      <LoadingSpinner />
     </div>
   );
-};
-
-export default Index;
+}

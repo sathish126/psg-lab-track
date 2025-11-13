@@ -36,7 +36,8 @@ export const VERIFICATION_STATUS_COLORS: Record<VerificationStatus, string> = {
 };
 
 export const ROUTES = {
-  LOGIN: '/login',
+  AUTH: '/auth',
+  LOGIN: '/auth',
   DASHBOARD: '/dashboard',
   EQUIPMENT: '/equipment',
   EQUIPMENT_CREATE: '/equipment/create',
