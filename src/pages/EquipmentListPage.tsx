@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useEquipmentStore } from '@/stores/equipmentStore';
-import { useAuthStore } from '@/stores/authStore';
-import { Equipment, UserRole, EquipmentStatus } from '@/types';
+import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
@@ -35,17 +34,35 @@ import { ConfirmDialog } from '@/components/ConfirmDialog';
 
 export default function EquipmentListPage() {
   const navigate = useNavigate();
-  const { user } = useAuthStore();
-  const { equipment, loading, fetchEquipment, bulkUpdateEquipment, bulkDeleteEquipment } = useEquipmentStore();
+  const { profile } = useAuth();
+  const [equipment, setEquipment] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [filteredEquipment, setFilteredEquipment] = useState<Equipment[]>([]);
+  const [filteredEquipment, setFilteredEquipment] = useState<any[]>([]);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   useEffect(() => {
     fetchEquipment();
-  }, [fetchEquipment]);
+  }, []);
+
+  const fetchEquipment = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('equipment')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setEquipment(data || []);
+    } catch (error) {
+      console.error('Error fetching equipment:', error);
+      toast.error('Failed to load equipment');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     let filtered = equipment;
@@ -54,25 +71,26 @@ export default function EquipmentListPage() {
       const searchLower = search.toLowerCase();
       filtered = filtered.filter(
         eq =>
-          eq.name.toLowerCase().includes(searchLower) ||
-          eq.serialNo.toLowerCase().includes(searchLower) ||
-          eq.make.toLowerCase().includes(searchLower)
+          eq.name?.toLowerCase().includes(searchLower) ||
+          eq.serial_no?.toLowerCase().includes(searchLower) ||
+          eq.make?.toLowerCase().includes(searchLower)
       );
     }
 
     if (statusFilter !== 'all') {
-      filtered = filtered.filter(eq => eq.workingStatus === statusFilter);
+      filtered = filtered.filter(eq => eq.working_status === statusFilter);
     }
 
     setFilteredEquipment(filtered);
   }, [equipment, search, statusFilter]);
 
-  const canAddEquipment = user?.role === UserRole.PRINCIPAL || user?.role === UserRole.HOD;
+  const canAddEquipment = profile?.role === 'principal' || profile?.role === 'hod';
+  const canDelete = profile?.role === 'principal';
 
-  const handleDownloadQR = async (eq: Equipment) => {
+  const handleDownloadQR = async (eq: any) => {
     try {
-      const qrDataURL = await generateQRCode(eq.qrCode);
-      downloadQRCode(qrDataURL, `${eq.serialNo}-QR`);
+      const qrDataURL = await generateQRCode(eq.qr_code);
+      downloadQRCode(qrDataURL, `${eq.serial_no}-QR`);
       toast.success('QR code downloaded');
     } catch (error) {
       toast.error('Failed to download QR code');
@@ -103,32 +121,42 @@ export default function EquipmentListPage() {
     }
   };
 
-  const handleBulkStatusChange = async (status: EquipmentStatus) => {
+  const handleBulkStatusChange = async (status: string) => {
     try {
-      await bulkUpdateEquipment(selectedIds, { workingStatus: status });
+      const { error } = await supabase
+        .from('equipment')
+        .update({ working_status: status })
+        .in('id', selectedIds);
+
+      if (error) throw error;
+      
+      toast.success('Equipment status updated');
       setSelectedIds([]);
+      fetchEquipment();
     } catch (error) {
-      // Error handled in store
+      console.error('Error updating equipment:', error);
+      toast.error('Failed to update equipment');
     }
   };
 
   const handleBulkDelete = async () => {
     try {
-      await bulkDeleteEquipment(selectedIds);
+      const { error } = await supabase
+        .from('equipment')
+        .delete()
+        .in('id', selectedIds);
+
+      if (error) throw error;
+      
+      toast.success('Equipment deleted');
       setSelectedIds([]);
       setShowDeleteConfirm(false);
+      fetchEquipment();
     } catch (error) {
-      // Error handled in store
+      console.error('Error deleting equipment:', error);
+      toast.error('Failed to delete equipment');
     }
   };
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6">

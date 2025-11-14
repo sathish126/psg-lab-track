@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { userApi } from '@/lib/api';
-import { User } from '@/types';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,23 +13,18 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Search, Trash2, Edit, FileDown } from 'lucide-react';
+import { Plus, Search } from 'lucide-react';
 import { ROLE_LABELS } from '@/lib/utils/constants';
 import { Breadcrumb } from '@/components/Breadcrumb';
 import { UserCreateModal } from '@/components/UserCreateModal';
-import { ConfirmDialog } from '@/components/ConfirmDialog';
-import { exportUsersToCSV } from '@/lib/utils/export';
 import { toast } from 'sonner';
-import { useNotificationStore } from '@/stores/notificationStore';
 
 export default function UsersPage() {
-  const [users, setUsers] = useState<User[]>([]);
+  const { profile } = useAuth();
+  const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [createModalOpen, setCreateModalOpen] = useState(false);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  const { addNotification } = useNotificationStore();
 
   useEffect(() => {
     loadUsers();
@@ -37,50 +32,39 @@ export default function UsersPage() {
 
   const loadUsers = async () => {
     try {
-      const data = await userApi.getAll();
-      setUsers(data);
+      const { data: profiles, error } = await supabase
+        .from('profiles')
+        .select(`
+          *,
+          user_roles(role)
+        `);
+
+      if (error) throw error;
+
+      const usersWithRoles = (profiles || []).map((p: any) => ({
+        ...p,
+        role: p.user_roles?.[0]?.role || null
+      }));
+
+      setUsers(usersWithRoles);
     } catch (error) {
       console.error('Failed to load users:', error);
+      toast.error('Failed to load users');
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleDeleteUser = async () => {
-    if (!selectedUser) return;
-    
-    try {
-      await userApi.delete(selectedUser.id);
-      toast.success('User deleted successfully');
-      
-      addNotification({
-        type: 'info',
-        title: 'User Removed',
-        message: `${selectedUser.name} has been removed from the system`,
-      });
-      
-      loadUsers();
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to delete user');
-    } finally {
-      setDeleteDialogOpen(false);
-      setSelectedUser(null);
-    }
-  };
-
-  const handleExportCSV = () => {
-    exportUsersToCSV(filteredUsers);
-    toast.success('Users data exported');
   };
 
   const filteredUsers = users.filter(u => {
     if (!search) return true;
     const searchLower = search.toLowerCase();
     return (
-      u.name.toLowerCase().includes(searchLower) ||
-      u.email.toLowerCase().includes(searchLower)
+      u.name?.toLowerCase().includes(searchLower) ||
+      u.email?.toLowerCase().includes(searchLower)
     );
   });
+
+  const isPrincipal = profile?.role === 'principal';
 
   if (loading) {
     return (
@@ -101,10 +85,12 @@ export default function UsersPage() {
             Manage system users and their roles
           </p>
         </div>
-        <Button onClick={() => setCreateModalOpen(true)}>
-          <Plus className="mr-2 h-4 w-4" />
-          Add User
-        </Button>
+        {isPrincipal && (
+          <Button onClick={() => setCreateModalOpen(true)}>
+            <Plus className="mr-2 h-4 w-4" />
+            Add User
+          </Button>
+        )}
       </div>
 
       <Card className="p-4">
@@ -118,9 +104,6 @@ export default function UsersPage() {
               className="pl-9"
             />
           </div>
-          <Button variant="outline" size="icon" onClick={handleExportCSV}>
-            <FileDown className="h-4 w-4" />
-          </Button>
         </div>
       </Card>
 
@@ -133,13 +116,12 @@ export default function UsersPage() {
               <TableHead>Role</TableHead>
               <TableHead>Department</TableHead>
               <TableHead>Phone</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filteredUsers.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
                   No users found
                 </TableCell>
               </TableRow>
@@ -149,31 +131,16 @@ export default function UsersPage() {
                   <TableCell className="font-medium">{user.name}</TableCell>
                   <TableCell>{user.email}</TableCell>
                   <TableCell>
-                    <Badge variant="secondary">{ROLE_LABELS[user.role]}</Badge>
+                    {user.role ? (
+                      <Badge>{ROLE_LABELS[user.role as keyof typeof ROLE_LABELS]}</Badge>
+                    ) : (
+                      <span className="text-muted-foreground">No role</span>
+                    )}
                   </TableCell>
-                  <TableCell>{user.department?.name || 'N/A'}</TableCell>
-                  <TableCell>{user.phone || 'N/A'}</TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex items-center justify-end gap-2">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => toast.info('Edit functionality coming soon')}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => {
-                          setSelectedUser(user);
-                          setDeleteDialogOpen(true);
-                        }}
-                      >
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
-                    </div>
+                  <TableCell>
+                    {user.department_id ? 'Department' : '-'}
                   </TableCell>
+                  <TableCell>{user.phone || '-'}</TableCell>
                 </TableRow>
               ))
             )}
@@ -181,21 +148,13 @@ export default function UsersPage() {
         </Table>
       </Card>
 
-      <UserCreateModal
-        open={createModalOpen}
-        onOpenChange={setCreateModalOpen}
-        onSuccess={loadUsers}
-      />
-
-      <ConfirmDialog
-        open={deleteDialogOpen}
-        onOpenChange={setDeleteDialogOpen}
-        title="Delete User"
-        description={`Are you sure you want to delete ${selectedUser?.name}? This action cannot be undone.`}
-        confirmText="Delete"
-        variant="destructive"
-        onConfirm={handleDeleteUser}
-      />
+      {isPrincipal && (
+        <UserCreateModal
+          open={createModalOpen}
+          onOpenChange={setCreateModalOpen}
+          onSuccess={loadUsers}
+        />
+      )}
     </div>
   );
 }
