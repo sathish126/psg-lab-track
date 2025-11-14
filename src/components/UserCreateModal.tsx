@@ -28,9 +28,10 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { UserRole } from '@/types';
 import { ROLE_LABELS } from '@/lib/utils/constants';
-import { userApi, departmentApi } from '@/lib/api';
 import { toast } from 'sonner';
 import { useNotificationStore } from '@/stores/notificationStore';
+import { supabase } from '@/integrations/supabase/client';
+import { useEffect } from 'react';
 
 const userSchema = z.object({
   name: z.string().min(3, 'Name must be at least 3 characters'),
@@ -67,16 +68,47 @@ export const UserCreateModal = ({ open, onOpenChange, onSuccess }: UserCreateMod
   });
 
   // Load departments when modal opens
-  useState(() => {
+  useEffect(() => {
     if (open) {
-      departmentApi.getAll().then(setDepartments);
+      const loadDepartments = async () => {
+        const { data } = await supabase.from('departments').select('*');
+        if (data) setDepartments(data);
+      };
+      loadDepartments();
     }
-  });
+  }, [open]);
 
   const onSubmit = async (data: UserFormData) => {
     setLoading(true);
     try {
-      await userApi.create(data);
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        toast.error('You must be logged in');
+        return;
+      }
+
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-user`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: data.email,
+          password: data.password,
+          name: data.name,
+          phone: data.phone,
+          role: data.role,
+          department_id: data.departmentId,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to create user');
+      }
       
       toast.success('User created successfully');
       

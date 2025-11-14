@@ -1,6 +1,5 @@
 import { NavLink } from '@/components/NavLink';
-import { useAuthStore } from '@/stores/authStore';
-import { UserRole } from '@/types';
+import { useAuth } from '@/hooks/useAuth';
 import { ROUTES } from '@/lib/utils/constants';
 import {
   LayoutDashboard,
@@ -26,58 +25,58 @@ const navItems = [
     icon: LayoutDashboard, 
     label: 'Dashboard', 
     to: ROUTES.DASHBOARD,
-    roles: [UserRole.PRINCIPAL, UserRole.HOD, UserRole.FACULTY, UserRole.LAB_ASSISTANT],
+    roles: ['principal', 'hod', 'faculty', 'lab_assistant'],
   },
   { 
     icon: Package, 
     label: 'Equipment', 
     to: ROUTES.EQUIPMENT,
-    roles: [UserRole.PRINCIPAL, UserRole.HOD, UserRole.FACULTY, UserRole.LAB_ASSISTANT],
+    roles: ['principal', 'hod', 'faculty', 'lab_assistant'],
   },
   { 
     icon: Building2, 
     label: 'Labs', 
     to: ROUTES.LABS,
-    roles: [UserRole.PRINCIPAL, UserRole.HOD],
+    roles: ['principal', 'hod'],
   },
   { 
     icon: QrCode, 
     label: 'Verification', 
     to: ROUTES.VERIFICATION,
-    roles: [UserRole.PRINCIPAL, UserRole.HOD, UserRole.FACULTY, UserRole.LAB_ASSISTANT],
+    roles: ['principal', 'hod', 'faculty', 'lab_assistant'],
   },
   { 
     icon: Calendar, 
     label: 'Calendar', 
     to: ROUTES.CALENDAR,
-    roles: [UserRole.PRINCIPAL, UserRole.HOD, UserRole.FACULTY, UserRole.LAB_ASSISTANT],
+    roles: ['principal', 'hod', 'faculty', 'lab_assistant'],
   },
   { 
     icon: FileText, 
     label: 'Reports', 
     to: ROUTES.REPORTS,
-    roles: [UserRole.PRINCIPAL, UserRole.HOD],
+    roles: ['principal', 'hod'],
   },
   { 
     icon: Users, 
     label: 'Users', 
     to: ROUTES.USERS,
-    roles: [UserRole.PRINCIPAL],
+    roles: ['principal'],
   },
   { 
     icon: Settings, 
     label: 'Settings', 
     to: ROUTES.SETTINGS,
-    roles: [UserRole.PRINCIPAL, UserRole.HOD, UserRole.FACULTY, UserRole.LAB_ASSISTANT],
+    roles: ['principal', 'hod', 'faculty', 'lab_assistant'],
   },
 ];
 
 export const Sidebar = () => {
-  const { user } = useAuthStore();
+  const { profile } = useAuth();
   const [collapsed, setCollapsed] = useState(false);
 
   const filteredItems = navItems.filter(item => 
-    user && item.roles.includes(user.role)
+    profile?.role && item.roles.includes(profile.role)
   );
 
   return (
@@ -130,7 +129,7 @@ export const Sidebar = () => {
       </nav>
 
       {/* User Info */}
-      {user && (
+      {profile && (
         <div className={cn(
           'p-4 border-t border-sidebar-border',
           collapsed && 'px-2'
@@ -141,17 +140,19 @@ export const Sidebar = () => {
           )}>
             <Avatar className="h-10 w-10 flex-shrink-0">
               <AvatarFallback className="bg-gradient-primary text-white">
-                {user.name.split(' ').map(n => n[0]).join('').toUpperCase()}
+                {profile.name.split(' ').map(n => n[0]).join('').toUpperCase()}
               </AvatarFallback>
             </Avatar>
             {!collapsed && (
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-sidebar-foreground truncate">
-                  {user.name}
+                  {profile.name}
                 </p>
-                <Badge variant="secondary" className="text-xs mt-1">
-                  {ROLE_LABELS[user.role]}
-                </Badge>
+                {profile.role && (
+                  <Badge variant="secondary" className="text-xs mt-1">
+                    {ROLE_LABELS[profile.role as keyof typeof ROLE_LABELS]}
+                  </Badge>
+                )}
               </div>
             )}
           </div>
