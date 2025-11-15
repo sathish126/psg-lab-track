@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
-import { labApi, equipmentApi } from '@/lib/api';
-import { Lab, Equipment } from '@/types';
+import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Building2, Users, Package, MapPin } from 'lucide-react';
@@ -10,8 +9,8 @@ import { Breadcrumb } from '@/components/Breadcrumb';
 
 export default function LabsPage() {
   const navigate = useNavigate();
-  const [labs, setLabs] = useState<Lab[]>([]);
-  const [equipment, setEquipment] = useState<Equipment[]>([]);
+  const [labs, setLabs] = useState<any[]>([]);
+  const [equipment, setEquipment] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -20,12 +19,16 @@ export default function LabsPage() {
 
   const loadData = async () => {
     try {
-      const [labsData, equipmentData] = await Promise.all([
-        labApi.getAll(),
-        equipmentApi.getAll(),
+      const [labsRes, equipmentRes] = await Promise.all([
+        supabase.from('labs').select('*, department:departments(*), in_charge:profiles(*)'),
+        supabase.from('equipment').select('id, lab_id'),
       ]);
-      setLabs(labsData);
-      setEquipment(equipmentData);
+
+      if (labsRes.error) throw labsRes.error;
+      if (equipmentRes.error) throw equipmentRes.error;
+
+      setLabs(labsRes.data || []);
+      setEquipment(equipmentRes.data || []);
     } catch (error) {
       console.error('Failed to load labs:', error);
     } finally {
@@ -34,7 +37,7 @@ export default function LabsPage() {
   };
 
   const getLabEquipmentCount = (labId: string) => {
-    return equipment.filter(eq => eq.labId === labId).length;
+    return equipment.filter(eq => eq.lab_id === labId).length;
   };
 
   if (loading) {
@@ -69,7 +72,7 @@ export default function LabsPage() {
                   <Building2 className="h-5 w-5 text-primary" />
                   <CardTitle className="text-lg">{lab.name}</CardTitle>
                 </div>
-                <Badge variant="secondary">{lab.labCode}</Badge>
+                <Badge variant="secondary">{lab.lab_code}</Badge>
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -80,12 +83,12 @@ export default function LabsPage() {
               </div>
               <div className="flex items-center gap-2 text-sm">
                 <MapPin className="h-4 w-4 text-muted-foreground" />
-                <span className="text-muted-foreground">Block {lab.block}, Hall {lab.hallNo}</span>
+                <span className="text-muted-foreground">Block {lab.block}, Hall {lab.hall_no}</span>
               </div>
               <div className="flex items-center gap-2 text-sm">
                 <Users className="h-4 w-4 text-muted-foreground" />
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">{lab.inCharge?.name}</p>
+                  <p className="text-sm font-medium truncate">{lab.in_charge?.name}</p>
                   <p className="text-xs text-muted-foreground">In-Charge</p>
                 </div>
               </div>

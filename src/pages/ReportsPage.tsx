@@ -1,14 +1,15 @@
 import { useEffect, useState } from 'react';
-import { departmentApi, equipmentApi } from '@/lib/api';
-import { Department, Equipment } from '@/types';
+import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { FileDown, TrendingUp, Package, CheckCircle2 } from 'lucide-react';
 import { Breadcrumb } from '@/components/Breadcrumb';
+import { exportEquipmentToCSV } from '@/lib/utils/export';
+import { toast } from 'sonner';
 
 export default function ReportsPage() {
-  const [departments, setDepartments] = useState<Department[]>([]);
-  const [equipment, setEquipment] = useState<Equipment[]>([]);
+  const [departments, setDepartments] = useState<any[]>([]);
+  const [equipment, setEquipment] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -17,12 +18,16 @@ export default function ReportsPage() {
 
   const loadData = async () => {
     try {
-      const [deptData, eqData] = await Promise.all([
-        departmentApi.getAll(),
-        equipmentApi.getAll(),
+      const [deptRes, eqRes] = await Promise.all([
+        supabase.from('departments').select('*'),
+        supabase.from('equipment').select('*, lab:labs(*, department:departments(*))'),
       ]);
-      setDepartments(deptData);
-      setEquipment(eqData);
+
+      if (deptRes.error) throw deptRes.error;
+      if (eqRes.error) throw eqRes.error;
+
+      setDepartments(deptRes.data || []);
+      setEquipment(eqRes.data || []);
     } catch (error) {
       console.error('Failed to load reports data:', error);
     } finally {
@@ -31,14 +36,19 @@ export default function ReportsPage() {
   };
 
   const getDepartmentStats = (deptId: string) => {
-    const deptEquipment = equipment.filter(eq => eq.lab?.departmentId === deptId);
-    const working = deptEquipment.filter(eq => eq.workingStatus === 'WORKING').length;
+    const deptEquipment = equipment.filter(eq => eq.lab?.department?.id === deptId);
+    const working = deptEquipment.filter(eq => eq.working_status === 'WORKING').length;
     
     return {
       total: deptEquipment.length,
       working,
       percentage: deptEquipment.length > 0 ? Math.round((working / deptEquipment.length) * 100) : 0,
     };
+  };
+
+  const handleExportReport = () => {
+    exportEquipmentToCSV(equipment);
+    toast.success('Report exported successfully');
   };
 
   if (loading) {
@@ -60,7 +70,7 @@ export default function ReportsPage() {
             Comprehensive equipment and verification analytics
           </p>
         </div>
-        <Button>
+        <Button onClick={handleExportReport}>
           <FileDown className="mr-2 h-4 w-4" />
           Export Report
         </Button>
@@ -86,7 +96,7 @@ export default function ReportsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-success">
-              {equipment.filter(eq => eq.workingStatus === 'WORKING').length}
+              {equipment.filter(eq => eq.working_status === 'WORKING').length}
             </div>
             <p className="text-xs text-muted-foreground">Operational equipment</p>
           </CardContent>
@@ -99,7 +109,7 @@ export default function ReportsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-warning">
-              {equipment.filter(eq => eq.workingStatus === 'REPAIRABLE').length}
+              {equipment.filter(eq => eq.working_status === 'REPAIRABLE').length}
             </div>
             <p className="text-xs text-muted-foreground">Requires maintenance</p>
           </CardContent>
@@ -107,46 +117,46 @@ export default function ReportsPage() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Overall Health</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Not Working</CardTitle>
+            <Package className="h-4 w-4 text-destructive" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {Math.round((equipment.filter(eq => eq.workingStatus === 'WORKING').length / equipment.length) * 100)}%
+            <div className="text-2xl font-bold text-destructive">
+              {equipment.filter(eq => eq.working_status === 'NOT_WORKING').length}
             </div>
-            <p className="text-xs text-muted-foreground">Equipment in working condition</p>
+            <p className="text-xs text-muted-foreground">Out of service</p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Department-wise Summary */}
+      {/* Department-wise Report */}
       <Card>
         <CardHeader>
-          <CardTitle>Department-wise Summary</CardTitle>
+          <CardTitle>Department-wise Equipment Status</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {departments.map(dept => {
+            {departments.map((dept) => {
               const stats = getDepartmentStats(dept.id);
               return (
-                <div key={dept.id} className="flex items-center justify-between p-4 border rounded-lg">
-                  <div className="flex-1">
-                    <h3 className="font-medium">{dept.name}</h3>
-                    <p className="text-sm text-muted-foreground">{dept.code}</p>
+                <div key={dept.id} className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium">{dept.name}</p>
+                      <p className="text-sm text-muted-foreground">{dept.code}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-medium">
+                        {stats.working} / {stats.total} Working
+                      </p>
+                      <p className="text-xs text-muted-foreground">{stats.percentage}% operational</p>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-6">
-                    <div className="text-right">
-                      <p className="text-sm text-muted-foreground">Total Equipment</p>
-                      <p className="text-xl font-bold">{stats.total}</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm text-muted-foreground">Working</p>
-                      <p className="text-xl font-bold text-success">{stats.working}</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm text-muted-foreground">Health</p>
-                      <p className="text-xl font-bold">{stats.percentage}%</p>
-                    </div>
+                  <div className="w-full bg-muted rounded-full h-2">
+                    <div
+                      className="bg-success h-2 rounded-full transition-all"
+                      style={{ width: `${stats.percentage}%` }}
+                    />
                   </div>
                 </div>
               );
